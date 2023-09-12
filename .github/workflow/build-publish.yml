@@ -1,0 +1,76 @@
+name: Build and Tag Docker Image
+
+on:
+  push:
+    branches:
+      - main
+      
+jobs:
+  build-and-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup JFrog CLI
+        uses: jfrog/setup-jfrog-cli@v3
+        env:
+          JF_URL: ${{ secrets.JF_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+
+      - name: Build Tag and push Docker Image
+        env:
+          IMAGE_NAME: san10.jfrog.io/docker/jfrog-docker-example-image:${{ github.run_number }}
+        run: |
+          jf docker build -t $IMAGE_NAME .
+          jf docker push $IMAGE_NAME
+          
+      - name: Publish Build info With JFrog CLI
+        env:
+          # Generated and maintained by GitHub
+          JFROG_CLI_BUILD_NAME: jfrog-docker-build-example
+          # JFrog organization secret
+          JFROG_CLI_BUILD_NUMBER : ${{ github.run_number }}
+        run: |
+          # Export the build name and build nuber
+          # Collect environment variables for the build
+          jf rt build-collect-env
+          # Collect VCS details from git and add them to the build
+          jf rt build-add-git
+          # Publish build info
+          jf rt build-publish# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+
+      # Runs a single command using the runners shell
+      - name: Run a one-line script
+        run: echo Hello, world!
+
+      # Runs a set of commands using the runners shell
+      - name: Run a multi-line script
+        run: |
+          echo Add other actions to build,
+          echo test, and deploy your project.
